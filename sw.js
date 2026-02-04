@@ -4,20 +4,20 @@
 
 const CACHE_NAME = 'duitku-v1';
 const ASSETS = [
-    '/',
-    '/index.html',
-    '/css/style.css',
-    '/js/app.js',
-    '/js/storage.js',
-    '/js/auth.js',
-    '/js/gdrive.js',
-    '/js/sharing.js',
-    '/js/expenses.js',
-    '/js/budget.js',
-    '/js/tabung.js',
-    '/js/investment.js',
-    '/js/reports.js',
-    '/manifest.json'
+    './',
+    './index.html',
+    './css/style.css',
+    './js/app.js',
+    './js/storage.js',
+    './js/auth.js',
+    './js/gdrive.js',
+    './js/sharing.js',
+    './js/expenses.js',
+    './js/budget.js',
+    './js/tabung.js',
+    './js/investment.js',
+    './js/reports.js',
+    './manifest.json'
 ];
 
 // Install event - cache assets
@@ -80,7 +80,7 @@ self.addEventListener('fetch', (event) => {
             })
             .catch(() => {
                 // Return offline page if available
-                return caches.match('/index.html');
+                return caches.match('./index.html');
             })
     );
 });
