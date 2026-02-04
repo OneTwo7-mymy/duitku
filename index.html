@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DuitKu - Personal & Family Finance Management App">
+  <meta name="theme-color" content="#6366f1">
+  <title>DuitKu - Finance Manager</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <!-- Google API -->
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  
+  <!-- Chart.js for Reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  
+  <!-- ============================================
+       Login Screen
+       ============================================ -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-logo">💰</div>
+    <h1 class="login-title">DuitKu</h1>
+    <p class="login-subtitle">Manage your finances with ease</p>
+    
+    <div id="google-signin-btn"></div>
+  </div>
+  
+  <!-- ============================================
+       Main App (Hidden until logged in)
+       ============================================ -->
+  <div id="app" class="app-container hidden">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">💰</span>
+          <span>DuitKu</span>
+        </div>
+        
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="personal">👤 Personal</button>
+          <button class="mode-btn" data-mode="family">👨‍👩‍👧‍👦 Family</button>
+        </div>
+        
+        <div class="user-profile" id="user-profile">
+          <img src="" alt="User" class="user-avatar" id="user-avatar">
+          <span class="user-name" id="user-name">User</span>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- ============================================
+           Dashboard Page
+           ============================================ -->
+      <section id="page-dashboard" class="page active">
+        <h2 class="mb-lg">Dashboard</h2>
+        
+        <!-- Monthly Summary -->
+        <div class="grid grid-3 mb-lg">
+          <div class="card summary-card">
+            <p class="card-label">💵 Salary (Gaji)</p>
+            <p class="card-value" id="monthly-salary">RM 0</p>
+          </div>
+          <div class="card summary-card secondary">
+            <p class="card-label">💸 Total Expenses</p>
+            <p class="card-value" id="monthly-expenses">RM 0</p>
+          </div>
+          <div class="card summary-card success">
+            <p class="card-label">💰 Balance</p>
+            <p class="card-value" id="monthly-balance">RM 0</p>
+          </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-2 mb-lg">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🏦 Total Tabung</span>
+            </div>
+            <p class="text-2xl font-bold font-mono" id="total-tabung">RM 0</p>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📈 Investment Value</span>
+            </div>
+            <p class="text-2xl font-bold font-mono" id="total-investment">RM 0</p>
+          </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Transactions</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigateTo('expenses')">View All</button>
+          </div>
+          <div class="transaction-list" id="recent-transactions">
+            <div class="empty-state">
+              <div class="icon">📝</div>
+              <h3>No transactions yet</h3>
+              <p>Start by adding your first expense</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Expenses Page
+           ============================================ -->
+      <section id="page-expenses" class="page">
+        <div class="flex justify-between items-center mb-lg">
+          <h2>Expenses</h2>
+          <div class="flex gap-sm">
+            <input type="month" class="form-input" id="expense-month" style="width: auto;">
+          </div>
+        </div>
+        
+        <!-- Salary Input -->
+        <div class="card mb-lg">
+          <div class="card-header">
+            <span class="card-title">💵 Monthly Salary</span>
+          </div>
+          <div class="input-group">
+            <span class="input-prefix">RM</span>
+            <input type="number" class="form-input" id="salary-input" placeholder="Enter your salary" step="0.01">
+          </div>
+          <button class="btn btn-primary mt-md w-full" onclick="saveSalary()">Save Salary</button>
+        </div>
+        
+        <!-- Expense List -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Transactions</span>
+          </div>
+          <div class="transaction-list" id="expense-list">
+            <div class="empty-state">
+              <div class="icon">💸</div>
+              <h3>No expenses yet</h3>
+              <p>Tap + to add your first expense</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Budget Page
+           ============================================ -->
+      <section id="page-budget" class="page">
+        <div class="flex justify-between items-center mb-lg">
+          <h2>Budget</h2>
+          <button class="btn btn-primary btn-sm" onclick="openBudgetModal()">+ Add Budget</button>
+        </div>
+        
+        <div id="budget-list">
+          <div class="empty-state">
+            <div class="icon">📊</div>
+            <h3>No budgets set</h3>
+            <p>Set monthly spending limits for each category</p>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Tabung (Savings) Page
+           ============================================ -->
+      <section id="page-tabung" class="page">
+        <div class="flex justify-between items-center mb-lg">
+          <h2>🏦 Tabung</h2>
+          <button class="btn btn-primary btn-sm" onclick="openTabungModal()">+ New Goal</button>
+        </div>
+        
+        <div class="grid grid-2" id="tabung-list">
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="icon">🎯</div>
+            <h3>No savings goals</h3>
+            <p>Create your first tabung to start saving!</p>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Investment Page
+           ============================================ -->
+      <section id="page-investment" class="page">
+        <div class="flex justify-between items-center mb-lg">
+          <h2>📈 Investments</h2>
+          <button class="btn btn-primary btn-sm" onclick="openInvestmentModal()">+ Add Investment</button>
+        </div>
+        
+        <!-- Portfolio Summary -->
+        <div class="grid grid-3 mb-lg">
+          <div class="card summary-card">
+            <p class="card-label">Total Invested</p>
+            <p class="card-value" id="total-invested">RM 0</p>
+          </div>
+          <div class="card summary-card secondary">
+            <p class="card-label">Current Value</p>
+            <p class="card-value" id="current-value">RM 0</p>
+          </div>
+          <div class="card summary-card" id="profit-loss-card">
+            <p class="card-label">Profit/Loss</p>
+            <p class="card-value" id="profit-loss">RM 0</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Portfolio</span>
+          </div>
+          <div class="transaction-list" id="investment-list">
+            <div class="empty-state">
+              <div class="icon">📊</div>
+              <h3>No investments yet</h3>
+              <p>Start tracking your investment portfolio</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Reports Page
+           ============================================ -->
+      <section id="page-reports" class="page">
+        <div class="flex justify-between items-center mb-lg">
+          <h2>📉 Reports</h2>
+          <div class="flex gap-sm">
+            <button class="btn btn-secondary btn-sm" onclick="exportToExcel()">📊 Export Excel</button>
+            <button class="btn btn-secondary btn-sm" onclick="saveToGDrive()">☁️ Save to Drive</button>
+          </div>
+        </div>
+        
+        <!-- Net Worth -->
+        <div class="card mb-lg">
+          <div class="card-header">
+            <span class="card-title">💎 Net Worth</span>
+          </div>
+          <p class="text-3xl font-bold font-mono text-primary" id="net-worth">RM 0</p>
+          <p class="text-sm text-muted mt-sm">Tabung + Investments</p>
+        </div>
+        
+        <!-- Charts -->
+        <div class="grid grid-2 mb-lg">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Expense Breakdown</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="expense-pie-chart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Spending Trend</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="spending-trend-chart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Investment Breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Investment Breakdown</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="investment-chart"></canvas>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ============================================
+           Settings Page
+           ============================================ -->
+      <section id="page-settings" class="page">
+        <h2 class="mb-lg">⚙️ Settings</h2>
+        
+        <!-- Sharing & Collaboration -->
+        <div class="card mb-lg">
+          <div class="card-header">
+            <span class="card-title">👥 Sharing & Collaboration</span>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Invite by Google Email</label>
+            <div class="input-group">
+              <input type="email" class="form-input" id="invite-email" placeholder="email@gmail.com">
+              <button class="btn btn-primary" onclick="inviteCollaborator()">Invite</button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Permission Level</label>
+            <select class="form-select" id="permission-level">
+              <option value="view">👁️ View Only</option>
+              <option value="edit">✏️ Edit & View</option>
+            </select>
+          </div>
+          
+          <div class="mt-lg">
+            <p class="text-sm text-muted mb-sm">Shared With:</p>
+            <div id="collaborators-list">
+              <p class="text-muted">No collaborators yet</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Data Management -->
+        <div class="card mb-lg">
+          <div class="card-header">
+            <span class="card-title">💾 Data Management</span>
+          </div>
+          <div class="flex gap-sm flex-wrap">
+            <button class="btn btn-secondary" onclick="syncToGDrive()">☁️ Sync to Drive</button>
+            <button class="btn btn-secondary" onclick="restoreFromGDrive()">📥 Restore from Drive</button>
+            <button class="btn btn-secondary" onclick="exportAllData()">📤 Export JSON</button>
+            <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+          </div>
+        </div>
+        
+        <!-- Account -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">👤 Account</span>
+          </div>
+          <button class="btn btn-danger w-full" onclick="signOut()">Sign Out</button>
+        </div>
+      </section>
+      
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-items">
+        <button class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-item" data-page="expenses">
+          <span class="nav-icon">💸</span>
+          <span class="nav-label">Expenses</span>
+        </button>
+        <button class="nav-item" data-page="budget">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Budget</span>
+        </button>
+        <button class="nav-item" data-page="tabung">
+          <span class="nav-icon">🏦</span>
+          <span class="nav-label">Tabung</span>
+        </button>
+        <button class="nav-item" data-page="investment">
+          <span class="nav-icon">📈</span>
+          <span class="nav-label">Invest</span>
+        </button>
+        <button class="nav-item" data-page="reports">
+          <span class="nav-icon">📉</span>
+          <span class="nav-label">Reports</span>
+        </button>
+        <button class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </div>
+    </nav>
+    
+    <!-- FAB (Add Expense) -->
+    <button class="fab" id="fab-add" onclick="openExpenseModal()">+</button>
+    
+  </div>
+  
+  <!-- ============================================
+       Modals
+       ============================================ -->
+  
+  <!-- Add Expense Modal -->
+  <div class="modal-overlay" id="expense-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Expense</h3>
+        <button class="modal-close" onclick="closeModal('expense-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="expense-form">
+          <input type="hidden" id="expense-id">
+          
+          <div class="form-group">
+            <label class="form-label">Amount (RM)</label>
+            <div class="input-group">
+              <span class="input-prefix">RM</span>
+              <input type="number" class="form-input" id="expense-amount" placeholder="0.00" step="0.01" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <div class="category-grid" id="expense-categories">
+              <div class="category-tag selected" data-category="food">
+                <span class="emoji">🍔</span>
+                <span>Food</span>
+              </div>
+              <div class="category-tag" data-category="transport">
+                <span class="emoji">🚗</span>
+                <span>Transport</span>
+              </div>
+              <div class="category-tag" data-category="shopping">
+                <span class="emoji">🛒</span>
+                <span>Shopping</span>
+              </div>
+              <div class="category-tag" data-category="bills">
+                <span class="emoji">🏠</span>
+                <span>Bills</span>
+              </div>
+              <div class="category-tag" data-category="entertainment">
+                <span class="emoji">🎮</span>
+                <span>Entertainment</span>
+              </div>
+              <div class="category-tag" data-category="health">
+                <span class="emoji">💊</span>
+                <span>Health</span>
+              </div>
+              <div class="category-tag" data-category="education">
+                <span class="emoji">📚</span>
+                <span>Education</span>
+              </div>
+              <div class="category-tag" data-category="others">
+                <span class="emoji">➕</span>
+                <span>Others</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" id="expense-date" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Note (Optional)</label>
+            <input type="text" class="form-input" id="expense-note" placeholder="What was this for?">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">📷 Receipt (Optional)</label>
+            <div class="file-input-wrapper">
+              <input type="file" class="file-input" id="expense-receipt" accept="image/*">
+              <label for="expense-receipt" class="file-input-label">
+                <span>📷</span>
+                <span>Tap to upload receipt</span>
+              </label>
+            </div>
+            <img class="file-preview hidden" id="receipt-preview" alt="Receipt preview">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('expense-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveExpense()">Save Expense</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Budget Modal -->
+  <div class="modal-overlay" id="budget-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Set Budget</h3>
+        <button class="modal-close" onclick="closeModal('budget-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="budget-form">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="budget-category" required>
+              <option value="food">🍔 Food</option>
+              <option value="transport">🚗 Transport</option>
+              <option value="shopping">🛒 Shopping</option>
+              <option value="bills">🏠 Bills</option>
+              <option value="entertainment">🎮 Entertainment</option>
+              <option value="health">💊 Health</option>
+              <option value="education">📚 Education</option>
+              <option value="others">➕ Others</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Monthly Limit (RM)</label>
+            <div class="input-group">
+              <span class="input-prefix">RM</span>
+              <input type="number" class="form-input" id="budget-limit" placeholder="0.00" step="0.01" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('budget-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Tabung Modal -->
+  <div class="modal-overlay" id="tabung-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">New Savings Goal</h3>
+        <button class="modal-close" onclick="closeModal('tabung-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="tabung-form">
+          <input type="hidden" id="tabung-id">
+          
+          <div class="form-group">
+            <label class="form-label">Goal Name</label>
+            <input type="text" class="form-input" id="tabung-name" placeholder="e.g., Vacation Fund" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Suggestions</label>
+            <div class="flex gap-sm flex-wrap">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('Emergency Fund 🆘')">🆘 Emergency</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('Vacation ✈️')">✈️ Vacation</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('Education 🎓')">🎓 Education</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('Wedding 💒')">💒 Wedding</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('New Car 🚗')">🚗 Car</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="setTabungName('House 🏠')">🏠 House</button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Target Amount (RM)</label>
+            <div class="input-group">
+              <span class="input-prefix">RM</span>
+              <input type="number" class="form-input" id="tabung-target" placeholder="10000" step="0.01" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Target Date</label>
+            <input type="date" class="form-input" id="tabung-deadline" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label flex items-center gap-sm">
+              <input type="checkbox" id="tabung-calendar" checked>
+              📅 Add to Google Calendar
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('tabung-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveTabung()">Create Goal</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Money to Tabung Modal -->
+  <div class="modal-overlay" id="tabung-add-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add/Withdraw Money</h3>
+        <button class="modal-close" onclick="closeModal('tabung-add-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="tabung-add-id">
+        
+        <div class="form-group">
+          <label class="form-label">Amount (RM)</label>
+          <div class="input-group">
+            <span class="input-prefix">RM</span>
+            <input type="number" class="form-input" id="tabung-add-amount" placeholder="0.00" step="0.01" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Action</label>
+          <div class="flex gap-sm">
+            <button type="button" class="btn btn-success flex-1" onclick="addToTabung('add')">➕ Add</button>
+            <button type="button" class="btn btn-danger flex-1" onclick="addToTabung('withdraw')">➖ Withdraw</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Investment Modal -->
+  <div class="modal-overlay" id="investment-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Investment</h3>
+        <button class="modal-close" onclick="closeModal('investment-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="investment-form">
+          <input type="hidden" id="investment-id">
+          
+          <div class="form-group">
+            <label class="form-label">Investment Type</label>
+            <select class="form-select" id="investment-type" required>
+              <option value="stocks">📊 Stocks (Bursa)</option>
+              <option value="asb">🏦 ASB/ASM</option>
+              <option value="unit-trust">📈 Unit Trust</option>
+              <option value="gold">🪙 Gold</option>
+              <option value="fd">💰 Fixed Deposit</option>
+              <option value="crypto">🔷 Crypto</option>
+              <option value="property">🏠 Property</option>
+              <option value="forex">💱 Forex</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Investment Name</label>
+            <input type="text" class="form-input" id="investment-name" placeholder="e.g., Maybank, Bitcoin" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Buy Price / Principal (RM)</label>
+            <div class="input-group">
+              <span class="input-prefix">RM</span>
+              <input type="number" class="form-input" id="investment-buy-price" placeholder="0.00" step="0.01" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Current Value (RM)</label>
+            <div class="input-group">
+              <span class="input-prefix">RM</span>
+              <input type="number" class="form-input" id="investment-current-value" placeholder="0.00" step="0.01" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Units/Shares (Optional)</label>
+            <input type="number" class="form-input" id="investment-units" placeholder="e.g., 100" step="0.0001">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Purchase Date</label>
+            <input type="date" class="form-input" id="investment-date" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('investment-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveInvestment()">Save Investment</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- App Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/gdrive.js"></script>
+  <script src="js/sharing.js"></script>
+  <script src="js/expenses.js"></script>
+  <script src="js/budget.js"></script>
+  <script src="js/tabung.js"></script>
+  <script src="js/investment.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/app.js"></script>
+  
+</body>
+</html>
